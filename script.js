@@ -10,40 +10,21 @@ async function fetchStudentData() {
         }
         
         const csvText = await response.text();
-        console.log('Raw CSV data:', csvText); // Log raw data
-        
         const rows = csvText.split('\n').map(row => row.split(','));
-        console.log('Parsed rows:', rows); // Log parsed rows
+        
+        // Log the header row to see column order
+        console.log('Headers:', rows[0]);
         
         // Skip header row and process data
         const studentsByClass = {};
         
-        // Log the header row to see column structure
-        console.log('Header row:', rows[0]);
-        
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            console.log('Processing row:', row); // Log each row being processed
+            console.log('Row data:', row);
             
-            // Check if we have enough columns and the row isn't empty
-            if (!row || row.length < 4 || !row[0]) {
-                console.log('Skipping invalid row:', row);
-                continue;
-            }
-            
-            // Get values and trim whitespace
-            const name = row[0]?.trim() || '';
-            const gender = row[1]?.trim() || '';
-            const phone = row[2]?.trim() || '';
-            const className = row[3]?.trim() || '';
-            const rollNo = row[4]?.trim() || '';
-            
-            console.log('Extracted values:', { name, gender, phone, className, rollNo });
-            
-            if (!name || !className) {
-                console.log('Skipping row due to missing name or class');
-                continue;
-            }
+            // Assuming columns are: Name, Gender, Phone, Class, Roll No
+            const [name, gender, phone, className, rollNo] = row;
+            if (!name || !className) continue;
             
             if (!studentsByClass[className]) {
                 studentsByClass[className] = [];
@@ -51,16 +32,16 @@ async function fetchStudentData() {
             
             studentsByClass[className].push({
                 id: studentsByClass[className].length + 1,
-                name,
-                gender,
-                rollNo,
-                phone,
-                class: className,
+                name: name.trim(),
+                gender: gender.trim(),
+                rollNo: rollNo.trim(),
+                phone: phone.trim(),
+                class: className.trim(),
                 section: ''
             });
         }
         
-        console.log('Final processed data:', studentsByClass);
+        console.log('Processed data:', studentsByClass);
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
