@@ -42,23 +42,25 @@ async function fetchStudentData() {
         // Find the index of important columns
         const headers = rows[0].map(h => h.trim().toLowerCase());
         const rollNumberIndex = headers.findIndex(h => h.includes('roll'));
-        const nameIndex = headers.findIndex(h => h.includes('name'));
-        const genderIndex = headers.findIndex(h => h.includes('gender'));
-        const phoneIndex = headers.findIndex(h => h.includes('mobile'));
+        const nameIndex = headers.findIndex(h => h.includes('name') || h === 'team');
+        const genderIndex = headers.findIndex(h => h.includes('gender') || h === 'ethnicity');
+        const phoneIndex = headers.findIndex(h => h.includes('mobile') || h.includes('sms'));
+        const classIndex = headers.findIndex(h => h.includes('class'));
         
-        console.log('Column indices:', { rollNumberIndex, nameIndex, genderIndex, phoneIndex });
+        console.log('Column indices:', { rollNumberIndex, nameIndex, genderIndex, phoneIndex, classIndex });
+        
+        // Define the order of classes (Nursery should come before numbered classes)
+        const classOrder = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < Math.max(rollNumberIndex, nameIndex, genderIndex, phoneIndex)) continue;
+            if (!row || row.length < Math.max(rollNumberIndex, nameIndex, genderIndex, phoneIndex, classIndex)) continue;
             
             const rollNo = row[rollNumberIndex]?.trim();
             const name = row[nameIndex]?.trim() || '';
             const gender = row[genderIndex]?.trim() || '';
             const phone = row[phoneIndex]?.trim() || '';
-            
-            // Extract class from roll number (assuming it's the first digit)
-            const className = rollNo?.charAt(0) || '';
+            const className = row[classIndex]?.trim() || rollNo?.charAt(0) || ''; // Fallback to first digit of roll number
             
             if (!name || !className) continue;
             
@@ -77,8 +79,16 @@ async function fetchStudentData() {
             });
         }
         
-        console.log('Processed data:', studentsByClass);
-        return studentsByClass;
+        // Sort classes according to our defined order
+        const sortedStudentsByClass = {};
+        classOrder.forEach(className => {
+            if (studentsByClass[className]) {
+                sortedStudentsByClass[className] = studentsByClass[className];
+            }
+        });
+        
+        console.log('Processed data:', sortedStudentsByClass);
+        return sortedStudentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
         return {
@@ -118,7 +128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Update class dropdown
         classSelect.innerHTML = '<option value="">Select Class</option>';
-        const classes = Object.keys(studentData).sort((a, b) => Number(a) - Number(b));
+        const classes = Object.keys(studentData).sort((a, b) => {
+            const classOrder = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+            return classOrder.indexOf(a) - classOrder.indexOf(b);
+        });
         classes.forEach(className => {
             const option = document.createElement('option');
             option.value = className;
