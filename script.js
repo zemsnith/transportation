@@ -51,10 +51,12 @@ async function fetchStudentData() {
             // Skip if we don't have essential data
             if (!name || !className) continue;
             
+            // Initialize array for this class if it doesn't exist
             if (!studentsByClass[className]) {
                 studentsByClass[className] = [];
             }
             
+            // Add student to their class
             studentsByClass[className].push({
                 id: sn,
                 name: name,
@@ -64,7 +66,7 @@ async function fetchStudentData() {
             });
         }
         
-        console.log('Processed student data:', studentsByClass);
+        console.log('Students by class:', studentsByClass);
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
@@ -79,19 +81,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const classSelect = document.getElementById('classSelect');
         const studentList = document.getElementById('studentList');
         
+        // Fetch student data first
+        const studentData = await fetchStudentData();
+        console.log('Fetched student data:', studentData);
+        
+        // Get available classes from the data
+        const availableClasses = Object.keys(studentData).sort((a, b) => {
+            // Convert class names to numbers for sorting, treating non-numeric classes specially
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (isNaN(aNum) && isNaN(bNum)) return a.localeCompare(b);
+            if (isNaN(aNum)) return -1;
+            if (isNaN(bNum)) return 1;
+            return aNum - bNum;
+        });
+        
         // Add class options
         classSelect.innerHTML = '<option value="">Select Class</option>';
-        const classes = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        classes.forEach(className => {
+        availableClasses.forEach(className => {
             const option = document.createElement('option');
             option.value = className;
             option.textContent = `Class ${className}`;
             classSelect.appendChild(option);
         });
         
-        // Fetch and store student data
-        const studentData = await fetchStudentData();
-        console.log('Fetched student data:', studentData);
+        // Store data globally
         window.studentsByClass = studentData;
         window.studentBusAssignments = {};
         
