@@ -19,8 +19,59 @@ const busStops = {
     ]
 };
 
+// Function to fetch student data from Google Sheet
+async function fetchStudentData() {
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1m0XoXRhxfLxIQ61dmHtO8R2iyiCUWqli3WpxXW1CI94/export?format=csv&gid=57740857';
+    
+    try {
+        const response = await fetch(SHEET_URL);
+        if (!response.ok) {
+            throw new Error('Failed to fetch data');
+        }
+        
+        const csvText = await response.text();
+        const rows = csvText.split('\n').map(row => row.split(','));
+        
+        // Skip header row and process data
+        const studentsByClass = {};
+        
+        // Process each row starting from row 1 (skip header)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 7) continue; // Make sure we have enough columns
+            
+            // Get values from specific columns
+            const name = row[1]?.trim(); // Team column
+            const phone = row[6]?.trim(); // SMS Mobile Number column
+            const gender = row[2]?.trim(); // Ethnicity column (we'll use this for gender)
+            
+            // Skip if we don't have essential data
+            if (!name) continue;
+            
+            // For now, let's put all students in Class 7 (we'll update this later)
+            const className = '7';
+            
+            if (!studentsByClass[className]) {
+                studentsByClass[className] = [];
+            }
+            
+            studentsByClass[className].push({
+                id: studentsByClass[className].length + 1,
+                name: name,
+                gender: gender,
+                phone: phone
+            });
+        }
+        
+        return studentsByClass;
+    } catch (error) {
+        console.error('Error fetching student data:', error);
+        return {}; // Return empty object if fetch fails
+    }
+}
+
 // Initialize the page with student data
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Get DOM elements
     const classSelect = document.getElementById('classSelect');
     const studentList = document.getElementById('studentList');
@@ -35,58 +86,53 @@ document.addEventListener('DOMContentLoaded', () => {
         classSelect.appendChild(option);
     });
     
-    // Sample student data (you can replace this with your actual data)
-    const studentsByClass = {
-        '7': [
-            { id: '1', name: 'Prashna Karki', gender: 'Female', phone: '9825512557' },
-            { id: '2', name: 'Nilu Magar', gender: 'Female', phone: '9811324082' },
-            { id: '3', name: 'Rahul B.K.', gender: 'Male', phone: '9810514125' },
-            { id: '4', name: 'Gaurab Limbu', gender: 'Male', phone: '9824346825' }
-        ]
-    };
-    
-    // Store data globally
-    window.studentsByClass = studentsByClass;
-    window.studentBusAssignments = {};
-    
-    // Display students when class is selected
-    classSelect.addEventListener('change', () => {
-        const selectedClass = classSelect.value;
-        studentList.innerHTML = '';
+    try {
+        // Fetch and store student data
+        const studentData = await fetchStudentData();
+        window.studentsByClass = studentData;
+        window.studentBusAssignments = {};
         
-        if (!selectedClass) return;
-        
-        const students = studentsByClass[selectedClass] || [];
-        if (students.length === 0) {
-            studentList.innerHTML = '<div class="error">No students found in this class</div>';
-            return;
-        }
-        
-        students.forEach(student => {
-            const studentCard = document.createElement('div');
-            studentCard.className = 'student-card';
+        // Display students when class is selected
+        classSelect.addEventListener('change', () => {
+            const selectedClass = classSelect.value;
+            studentList.innerHTML = '';
             
-            const assignment = window.studentBusAssignments[student.id];
-            let busInfo = 'No bus assignment';
+            if (!selectedClass) return;
             
-            if (assignment) {
-                busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
+            const students = studentData[selectedClass] || [];
+            if (students.length === 0) {
+                studentList.innerHTML = '<div class="error">No students found in this class</div>';
+                return;
             }
             
-            studentCard.innerHTML = `
-                <div class="student-info">
-                    <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
-                    <div class="student-details">
-                        <span>Phone: ${student.phone || 'N/A'}</span>
+            students.forEach(student => {
+                const studentCard = document.createElement('div');
+                studentCard.className = 'student-card';
+                
+                const assignment = window.studentBusAssignments[student.id];
+                let busInfo = 'No bus assignment';
+                
+                if (assignment) {
+                    busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
+                }
+                
+                studentCard.innerHTML = `
+                    <div class="student-info">
+                        <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
+                        <div class="student-details">
+                            <span>Phone: ${student.phone || 'N/A'}</span>
+                        </div>
+                        <div class="bus-info">${busInfo}</div>
                     </div>
-                    <div class="bus-info">${busInfo}</div>
-                </div>
-            `;
-            
-            studentCard.addEventListener('click', () => selectStudent(student));
-            studentList.appendChild(studentCard);
+                `;
+                
+                studentCard.addEventListener('click', () => selectStudent(student));
+                studentList.appendChild(studentCard);
+            });
         });
-    });
+    } catch (error) {
+        console.error('Error initializing app:', error);
+    }
 });
 
 // Select a student and show bus assignment form
