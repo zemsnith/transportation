@@ -30,7 +30,11 @@ async function fetchStudentData() {
         }
         
         const csvText = await response.text();
+        console.log('Raw CSV data:', csvText); // Log raw CSV data
+        
         const rows = csvText.split('\n').map(row => row.split(','));
+        console.log('Headers:', rows[0]); // Log headers
+        console.log('First few rows:', rows.slice(1, 5)); // Log first few data rows
         
         // Skip header row and process data
         const studentsByClass = {};
@@ -38,15 +42,25 @@ async function fetchStudentData() {
         // Process each row starting from row 1 (skip header)
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < 7) continue; // Make sure we have enough columns
+            console.log('Processing row:', row); // Log each row as we process it
+            
+            if (!row || row.length < 7) {
+                console.log('Skipping row - not enough columns:', row);
+                continue;
+            }
             
             // Get values from specific columns
             const name = row[1]?.trim(); // Team column
             const phone = row[6]?.trim(); // SMS Mobile Number column
             const gender = row[2]?.trim(); // Ethnicity column (we'll use this for gender)
             
+            console.log('Extracted data:', { name, phone, gender }); // Log extracted data
+            
             // Skip if we don't have essential data
-            if (!name) continue;
+            if (!name) {
+                console.log('Skipping row - no name:', row);
+                continue;
+            }
             
             // For now, let's put all students in Class 7 (we'll update this later)
             const className = '7';
@@ -63,6 +77,7 @@ async function fetchStudentData() {
             });
         }
         
+        console.log('Final processed data:', studentsByClass); // Log final data
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
