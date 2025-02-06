@@ -33,14 +33,18 @@ async function fetchStudentData() {
         const csvText = await response.text();
         const rows = csvText.split('\n').map(row => row.split(','));
         
+        // Log headers to see column structure
+        console.log('Headers:', rows[0]);
+        
         // Skip header row and process data
         const studentsByClass = {};
         
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < 4) continue;
+            if (!row || row.length < 5) continue; // Make sure we have enough columns
             
-            const [name, gender, phone, className] = row;
+            // Assuming columns are: Roll No, Name, Gender, Phone, Class
+            const [rollNo, name, gender, phone, className] = row;
             if (!name || !className) continue;
             
             if (!studentsByClass[className]) {
@@ -51,13 +55,14 @@ async function fetchStudentData() {
                 id: studentsByClass[className].length + 1,
                 name: name.trim(),
                 gender: gender.trim(),
-                rollNo: (studentsByClass[className].length + 1).toString(),
+                rollNo: rollNo.trim(),
                 phone: phone.trim(),
                 class: className.trim(),
                 section: ''
             });
         }
         
+        console.log('Processed data:', studentsByClass);
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
