@@ -1,311 +1,298 @@
-// Fetch and process students data
-async function fetchStudentsFromSheet() {
+// Function to fetch and process student data from Google Sheet
+async function fetchStudentData() {
+    // Google Sheet CSV export URL
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1m0XoXRhxfLxIQ61dmHtO8R2iyiCUWqli3WpxXW1CI94/export?format=csv&gid=57740857';
+    
     try {
-        // Show loading state
-        studentList.innerHTML = '<div class="loading">Loading students...</div>';
-
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHLXImk6ycfpX_lnkTZ8Buvji9yNr-fwAtPU-ULdqmMePoDmrG9CpjnSliV9ZlKg6Ehk-o-KJedRva/pub?output=csv';
-        // Use a CORS proxy
-        const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
-        
-        const response = await fetch(PROXY_URL + SHEET_URL, {
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
-
+        const response = await fetch(SHEET_URL);
         if (!response.ok) {
             throw new Error('Failed to fetch data');
         }
         
         const csvText = await response.text();
-        console.log('CSV Data:', csvText); // Debug log
+        const rows = csvText.split('\n').map(row => row.split(','));
         
-        // Parse CSV data
-        const rows = csvText.split('\n')
-            .map(row => row.split(',')
-            .map(cell => cell.trim().replace(/^"|"$/g, ''))); // Remove quotes and trim whitespace
-        
-        console.log('Parsed Rows:', rows); // Debug log
-        
-        const headers = rows[0];
-        const studentData = rows.slice(1).filter(row => row.length > 1); // Skip empty rows
-        
-        // Convert to our format
+        // Skip header row and process data
         const studentsByClass = {};
         
-        studentData.forEach((row, index) => {
-            // Debug log
-            console.log('Processing row:', row);
+        for (let i = 1; i < rows.length; i++) {
+            const [name, gender, phone, className] = rows[i];
+            if (!name || !className) continue;
             
-            const student = {
-                id: row[0], // SN
-                name: row[1], // Name
-                gender: row[2], // Boy/Girl
-                rollNo: row[3], // Unique Roll NUM
-                class: row[4], // Class
-                section: row[5], // Section
-                phone: row[6], // Phone (R)
-                address: row[7], // Temporary Address
-                dobBS: row[8], // DOB BS
-                dobAD: row[9] // DOB AD
-            };
-            
-            // Only add if we have a valid class
-            if (student.class && student.class.toString().trim()) {
-                const className = student.class.toString().trim();
-                
-                if (!studentsByClass[className]) {
-                    studentsByClass[className] = [];
-                }
-                
-                studentsByClass[className].push(student);
+            if (!studentsByClass[className]) {
+                studentsByClass[className] = [];
             }
-        });
-
-        // Sort students by name within each class
-        Object.keys(studentsByClass).forEach(className => {
-            studentsByClass[className].sort((a, b) => a.name.localeCompare(b.name));
-        });
-
-        console.log('Processed Data:', studentsByClass); // Debug log
-
-        // Update class select options
-        updateClassOptions(Object.keys(studentsByClass));
-        
-        // Store the data globally
-        window.studentsByClass = studentsByClass;
+            
+            studentsByClass[className].push({
+                id: studentsByClass[className].length + 1,
+                name: name.trim(),
+                gender: gender.trim(),
+                rollNo: '',
+                phone: phone.trim(),
+                class: className.trim(),
+                section: ''
+            });
+        }
         
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
-        studentList.innerHTML = `
-            <div class="error">
-                Error loading student data. Please try one of these solutions:
-                <ol>
-                    <li>Click <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">this link</a> and click "Request temporary access to the demo server"</li>
-                    <li>Then refresh this page</li>
-                </ol>
-            </div>`;
-        return {};
+        // Fallback to Class 7 data if fetch fails
+        return {
+            '7': [
+                { id: '1', name: 'Prashna Karki', gender: 'Female', rollNo: '', phone: '9825512557', class: '7', section: '' },
+                { id: '2', name: 'Nilu Magar', gender: 'Female', rollNo: '', phone: '9811324082', class: '7', section: '' },
+                { id: '3', name: 'Rahul B.K.', gender: 'Female', rollNo: '', phone: '9810514125', class: '7', section: '' },
+                { id: '4', name: 'Gaurab Limbu', gender: 'Female', rollNo: '', phone: '9824346825', class: '7', section: '' },
+                { id: '5', name: 'Mousam Rai', gender: 'Female', rollNo: '', phone: '9804066906', class: '7', section: '' },
+                { id: '6', name: 'Joresh Rai', gender: 'Male', rollNo: '', phone: '9804314980', class: '7', section: '' },
+                { id: '7', name: 'Sayan Rai', gender: 'Male', rollNo: '', phone: '9807058819', class: '7', section: '' },
+                { id: '8', name: 'Saina Rai', gender: 'Male', rollNo: '', phone: '9811063971', class: '7', section: '' },
+                { id: '9', name: 'Alina Limbu', gender: 'Male', rollNo: '', phone: '9818236272', class: '7', section: '' },
+                { id: '10', name: 'Soina Tamang', gender: 'Female', rollNo: '', phone: '9824351542', class: '7', section: '' },
+                { id: '11', name: 'Phiroj Rai', gender: 'Female', rollNo: '', phone: '9819308470', class: '7', section: '' },
+                { id: '12', name: 'Bishnu Adhikari', gender: 'Female', rollNo: '', phone: '9804088826', class: '7', section: '' },
+                { id: '13', name: 'Rohit Rai', gender: 'Male', rollNo: '', phone: '9811344864', class: '7', section: '' },
+                { id: '14', name: 'Sishir Magar', gender: 'Male', rollNo: '', phone: '9817344389', class: '7', section: '' },
+                { id: '15', name: 'Ansh Lhayo Magar', gender: 'Female', rollNo: '', phone: '9817343204', class: '7', section: '' },
+                { id: '16', name: 'Jashna Limbu', gender: 'Female', rollNo: '', phone: '9819365953', class: '7', section: '' },
+                { id: '17', name: 'Ninamma Rai', gender: 'Female', rollNo: '', phone: '9819004269', class: '7', section: '' },
+                { id: '18', name: 'Lidiya Rai', gender: 'Female', rollNo: '', phone: '9769806982', class: '7', section: '' }
+            ]
+        };
     }
 }
 
-// Update class select options based on available classes
-function updateClassOptions(classes) {
-    classSelect.innerHTML = '<option value="">Select Class</option>';
-    classes.sort((a, b) => Number(a) - Number(b)).forEach(className => {
+// Initialize the page with data from Google Sheet
+document.addEventListener('DOMContentLoaded', async () => {
+    const studentsByClass = await fetchStudentData();
+    
+    // Update class dropdown
+    const classSelect = document.getElementById('classSelect');
+    const classes = Object.keys(studentsByClass).sort((a, b) => Number(a) - Number(b));
+    classes.forEach(className => {
         const option = document.createElement('option');
         option.value = className;
         option.textContent = `Class ${className}`;
         classSelect.appendChild(option);
     });
-}
-
-// Update the display students function to show more details
-function displayStudents() {
-    const selectedClass = classSelect.value;
-    studentList.innerHTML = '';
     
-    if (!selectedClass) return;
+    // Store student data
+    window.studentsByClass = studentsByClass;
     
-    console.log('Selected Class:', selectedClass); // Debug log
-    console.log('Available Data:', window.studentsByClass); // Debug log
-    
-    const students = window.studentsByClass[selectedClass] || [];
-    console.log('Students to display:', students); // Debug log
-    
-    if (students.length === 0) {
-        studentList.innerHTML = '<div class="error">No students found in this class</div>';
-        return;
+    // Update class select options
+    function updateClassOptions() {
+        classSelect.innerHTML = '<option value="">Select Class</option>';
+        Object.keys(studentsByClass).sort((a, b) => Number(a) - Number(b)).forEach(className => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = `Class ${className}`;
+            classSelect.appendChild(option);
+        });
     }
     
-    students.forEach(student => {
-        const studentCard = document.createElement('div');
-        studentCard.className = 'student-card';
+    // Display students for selected class
+    function displayStudents() {
+        const selectedClass = classSelect.value;
+        const studentList = document.getElementById('studentList');
+        studentList.innerHTML = '';
         
-        const assignment = studentBusAssignments[student.id];
-        let busInfo = 'No bus assignment';
+        if (!selectedClass) return;
         
-        if (assignment) {
-            busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
+        const students = studentsByClass[selectedClass] || [];
+        
+        if (students.length === 0) {
+            studentList.innerHTML = '<div class="error">No students found in this class</div>';
+            return;
         }
         
-        studentCard.innerHTML = `
-            <div class="student-info">
-                <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
-                <div class="student-details">
-                    <span>Roll No: ${student.rollNo || 'N/A'}</span>
-                    <span>• Phone: ${student.phone || 'N/A'}</span>
+        students.forEach(student => {
+            const studentCard = document.createElement('div');
+            studentCard.className = 'student-card';
+            
+            const assignment = window.studentBusAssignments[student.id];
+            let busInfo = 'No bus assignment';
+            
+            if (assignment) {
+                busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
+            }
+            
+            studentCard.innerHTML = `
+                <div class="student-info">
+                    <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
+                    <div class="student-details">
+                        <span>Roll No: ${student.rollNo || 'N/A'}</span>
+                        <span>• Phone: ${student.phone || 'N/A'}</span>
+                    </div>
+                    <div class="bus-info">${busInfo}</div>
                 </div>
-                <div class="bus-info">${busInfo}</div>
-            </div>
-        `;
+            `;
+            
+            studentCard.addEventListener('click', () => selectStudent(student));
+            studentList.appendChild(studentCard);
+        });
+    }
+    
+    // Select a student and show bus assignment form
+    function selectStudent(student) {
+        // Remove previous selection
+        const previousSelected = studentList.querySelector('.selected');
+        if (previousSelected) previousSelected.classList.remove('selected');
         
-        studentCard.addEventListener('click', () => selectStudent(student));
-        studentList.appendChild(studentCard);
+        // Add selection to clicked student
+        const studentCard = event.target.closest('.student-card');
+        studentCard.classList.add('selected');
+        
+        // Show bus selection form and hide initial message
+        const busSelectionForm = document.getElementById('busSelectionForm');
+        busSelectionForm.classList.remove('hidden');
+        const initialMessage = document.getElementById('initialMessage');
+        initialMessage.classList.add('hidden');
+        
+        // Update selected student name
+        const selectedStudentName = document.getElementById('selectedStudentName');
+        selectedStudentName.textContent = student.name;
+        
+        // Reset same location checkbox
+        const sameLocation = document.getElementById('sameLocation');
+        sameLocation.checked = false;
+        const dropoffBus = document.getElementById('dropoffBus');
+        dropoffBus.closest('.bus-section').classList.remove('disabled');
+        
+        // Load existing assignments
+        const assignment = window.studentBusAssignments[student.id];
+        if (assignment) {
+            const pickupBus = document.getElementById('pickupBus');
+            pickupBus.value = assignment.pickupBus;
+            dropoffBus.value = assignment.dropoffBus;
+            const pickupStop = document.getElementById('pickupStop');
+            const dropoffStop = document.getElementById('dropoffStop');
+            updateStops(assignment.pickupBus, pickupStop, assignment.pickupStop);
+            updateStops(assignment.dropoffBus, dropoffStop, assignment.dropoffStop);
+            
+            // Check if pickup and dropoff are the same
+            if (assignment.pickupBus === assignment.dropoffBus && 
+                assignment.pickupStop === assignment.dropoffStop) {
+                sameLocation.checked = true;
+                dropoffBus.closest('.bus-section').classList.add('disabled');
+            }
+        } else {
+            const pickupBus = document.getElementById('pickupBus');
+            pickupBus.value = '';
+            dropoffBus.value = '';
+            const pickupStop = document.getElementById('pickupStop');
+            const dropoffStop = document.getElementById('dropoffStop');
+            pickupStop.innerHTML = '<option value="">Select Location</option>';
+            dropoffStop.innerHTML = '<option value="">Select Location</option>';
+        }
+        
+        // Add event listeners for saving assignments
+        pickupStop.onchange = dropoffStop.onchange = () => saveStudentAssignment(student.id);
+    }
+    
+    // Event Listeners
+    const pickupBus = document.getElementById('pickupBus');
+    pickupBus.addEventListener('change', () => {
+        const pickupStop = document.getElementById('pickupStop');
+        updateStops(pickupBus.value, pickupStop);
+        if (document.getElementById('sameLocation').checked) {
+            copyPickupToDropoff();
+        }
     });
-}
-
-// Bus stop locations for each bus
-const busStops = {
-    'bus1': [
-        'Koteshwor',
-        'Tinkune',
-        'New Baneshwor',
-        'Mid Baneshwor',
-        'Old Baneshwor'
-    ],
-    'bus2': [
-        'Kalanki',
-        'Kalimati',
-        'Tripureshwor',
-        'Maitighar',
-        'Thapathali'
-    ]
-};
+    
+    const dropoffBus = document.getElementById('dropoffBus');
+    dropoffBus.addEventListener('change', () => {
+        const dropoffStop = document.getElementById('dropoffStop');
+        updateStops(dropoffBus.value, dropoffStop);
+    });
+    
+    const pickupStop = document.getElementById('pickupStop');
+    pickupStop.addEventListener('change', () => {
+        if (document.getElementById('sameLocation').checked) {
+            copyPickupToDropoff();
+        }
+    });
+    
+    // Handle same location checkbox
+    const sameLocation = document.getElementById('sameLocation');
+    sameLocation.addEventListener('change', function() {
+        const dropoffSection = dropoffBus.closest('.bus-section');
+        
+        if (this.checked) {
+            dropoffSection.classList.add('disabled');
+            copyPickupToDropoff();
+        } else {
+            dropoffSection.classList.remove('disabled');
+        }
+    });
+    
+    // Copy pickup details to dropoff
+    function copyPickupToDropoff() {
+        dropoffBus.value = pickupBus.value;
+        const dropoffStop = document.getElementById('dropoffStop');
+        updateStops(dropoffBus.value, dropoffStop, pickupStop.value);
+    }
+    
+    // Update stops based on selected bus
+    function updateStops(busId, stopSelect, selectedValue = '') {
+        stopSelect.innerHTML = '<option value="">Select Location</option>';
+        
+        if (!busId) return;
+        
+        const busStops = {
+            'bus1': [
+                'Koteshwor',
+                'Tinkune',
+                'New Baneshwor',
+                'Mid Baneshwor',
+                'Old Baneshwor'
+            ],
+            'bus2': [
+                'Kalanki',
+                'Kalimati',
+                'Tripureshwor',
+                'Maitighar',
+                'Thapathali'
+            ]
+        };
+        
+        busStops[busId].forEach(stop => {
+            const option = document.createElement('option');
+            option.value = stop;
+            option.textContent = stop;
+            option.selected = stop === selectedValue;
+            stopSelect.appendChild(option);
+        });
+    }
+    
+    // Save student bus assignment
+    function saveStudentAssignment(studentId) {
+        if (pickupBus.value && pickupStop.value && 
+            (sameLocation.checked || (dropoffBus.value && dropoffStop.value))) {
+            
+            window.studentBusAssignments[studentId] = {
+                pickupBus: pickupBus.value,
+                pickupStop: pickupStop.value,
+                dropoffBus: sameLocation.checked ? pickupBus.value : dropoffBus.value,
+                dropoffStop: sameLocation.checked ? pickupStop.value : dropoffStop.value
+            };
+            displayStudents(); // Refresh the display
+        }
+    }
+    
+    // Initialize the app
+    function initializeApp() {
+        updateClassOptions();
+        classSelect.addEventListener('change', displayStudents);
+    }
+    
+    initializeApp();
+});
 
 // Store student bus assignments
-const studentBusAssignments = {};
+window.studentBusAssignments = {};
 
-// Get DOM elements
-const classSelect = document.getElementById('classSelect');
-const studentList = document.getElementById('studentList');
-const busSelectionForm = document.getElementById('busSelectionForm');
-const initialMessage = document.getElementById('initialMessage');
-const selectedStudentName = document.getElementById('selectedStudentName');
-const pickupBus = document.getElementById('pickupBus');
-const dropoffBus = document.getElementById('dropoffBus');
-const pickupStop = document.getElementById('pickupStop');
-const dropoffStop = document.getElementById('dropoffStop');
-const sameLocation = document.getElementById('sameLocation');
-
-// Event Listeners
-pickupBus.addEventListener('change', () => {
-    updateStops(pickupBus.value, pickupStop);
-    if (sameLocation.checked) {
-        copyPickupToDropoff();
-    }
-});
-dropoffBus.addEventListener('change', () => updateStops(dropoffBus.value, dropoffStop));
-pickupStop.addEventListener('change', () => {
-    if (sameLocation.checked) {
-        copyPickupToDropoff();
-    }
-});
-
-// Handle same location checkbox
-sameLocation.addEventListener('change', function() {
-    const dropoffSection = dropoffBus.closest('.bus-section');
-    
-    if (this.checked) {
-        dropoffSection.classList.add('disabled');
-        copyPickupToDropoff();
-    } else {
-        dropoffSection.classList.remove('disabled');
-    }
-});
-
-// Copy pickup details to dropoff
-function copyPickupToDropoff() {
-    dropoffBus.value = pickupBus.value;
-    updateStops(dropoffBus.value, dropoffStop, pickupStop.value);
-}
-
-// Select a student and show bus assignment form
-function selectStudent(student) {
-    // Remove previous selection
-    const previousSelected = studentList.querySelector('.selected');
-    if (previousSelected) previousSelected.classList.remove('selected');
-    
-    // Add selection to clicked student
-    const studentCard = event.target.closest('.student-card');
-    studentCard.classList.add('selected');
-    
-    // Show bus selection form and hide initial message
-    busSelectionForm.classList.remove('hidden');
-    initialMessage.classList.add('hidden');
-    
-    // Update selected student name
-    selectedStudentName.textContent = student.name;
-    
-    // Reset same location checkbox
-    sameLocation.checked = false;
-    dropoffBus.closest('.bus-section').classList.remove('disabled');
-    
-    // Load existing assignments
-    const assignment = studentBusAssignments[student.id];
-    if (assignment) {
-        pickupBus.value = assignment.pickupBus;
-        dropoffBus.value = assignment.dropoffBus;
-        updateStops(assignment.pickupBus, pickupStop, assignment.pickupStop);
-        updateStops(assignment.dropoffBus, dropoffStop, assignment.dropoffStop);
-        
-        // Check if pickup and dropoff are the same
-        if (assignment.pickupBus === assignment.dropoffBus && 
-            assignment.pickupStop === assignment.dropoffStop) {
-            sameLocation.checked = true;
-            dropoffBus.closest('.bus-section').classList.add('disabled');
-        }
-    } else {
-        pickupBus.value = '';
-        dropoffBus.value = '';
-        pickupStop.innerHTML = '<option value="">Select Location</option>';
-        dropoffStop.innerHTML = '<option value="">Select Location</option>';
-    }
-    
-    // Add event listeners for saving assignments
-    pickupStop.onchange = dropoffStop.onchange = () => saveStudentAssignment(student.id);
-}
-
-// Update stops based on selected bus
-function updateStops(busId, stopSelect, selectedValue = '') {
-    stopSelect.innerHTML = '<option value="">Select Location</option>';
-    
-    if (!busId) return;
-    
-    busStops[busId].forEach(stop => {
-        const option = document.createElement('option');
-        option.value = stop;
-        option.textContent = stop;
-        option.selected = stop === selectedValue;
-        stopSelect.appendChild(option);
-    });
-}
-
-// Save student bus assignment
-function saveStudentAssignment(studentId) {
-    if (pickupBus.value && pickupStop.value && 
-        (sameLocation.checked || (dropoffBus.value && dropoffStop.value))) {
-        
-        studentBusAssignments[studentId] = {
-            pickupBus: pickupBus.value,
-            pickupStop: pickupStop.value,
-            dropoffBus: sameLocation.checked ? pickupBus.value : dropoffBus.value,
-            dropoffStop: sameLocation.checked ? pickupStop.value : dropoffStop.value
-        };
-        displayStudents(); // Refresh the display
-    }
-}
-
-// Initialize the app
-async function initializeApp() {
-    try {
-        const data = await fetchStudentsFromSheet();
-        if (Object.keys(data).length > 0) {
-            window.studentsByClass = data;
-            // Add event listener for class selection
-            classSelect.addEventListener('change', displayStudents);
-        }
-    } catch (error) {
-        console.error('Error initializing app:', error);
-    }
-}
-
-// Initialize when the page loads
-document.addEventListener('DOMContentLoaded', initializeApp);
-
-// Add some styles for the new student card layout
+// Add styles
 const newStyles = `
 .student-info {
     display: flex;
