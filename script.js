@@ -21,6 +21,7 @@ const busStops = {
 
 // Function to fetch student data from Google Sheet
 async function fetchStudentData() {
+    // Use the export URL for CSV format
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1m0XoXRhxfLxIQ61dmHtO8R2iyiCUWqli3WpxXW1CI94/export?format=csv&gid=57740857';
     
     try {
@@ -30,11 +31,7 @@ async function fetchStudentData() {
         }
         
         const csvText = await response.text();
-        console.log('Raw CSV data:', csvText); // Log raw CSV data
-        
         const rows = csvText.split('\n').map(row => row.split(','));
-        console.log('Headers:', rows[0]); // Log headers
-        console.log('First few rows:', rows.slice(1, 5)); // Log first few data rows
         
         // Skip header row and process data
         const studentsByClass = {};
@@ -42,42 +39,32 @@ async function fetchStudentData() {
         // Process each row starting from row 1 (skip header)
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            console.log('Processing row:', row); // Log each row as we process it
+            if (!row || row.length < 6) continue;
             
-            if (!row || row.length < 7) {
-                console.log('Skipping row - not enough columns:', row);
-                continue;
-            }
-            
-            // Get values from specific columns
-            const name = row[1]?.trim(); // Team column
-            const phone = row[6]?.trim(); // SMS Mobile Number column
-            const gender = row[2]?.trim(); // Ethnicity column (we'll use this for gender)
-            
-            console.log('Extracted data:', { name, phone, gender }); // Log extracted data
+            // Get values from specific columns based on your sheet
+            const sn = row[0]?.trim(); // SN
+            const name = row[1]?.trim(); // Name
+            const gender = row[2]?.trim(); // Boy/Girl
+            const className = row[4]?.trim(); // Class
+            const phone = row[6]?.trim(); // Phone (R)
             
             // Skip if we don't have essential data
-            if (!name) {
-                console.log('Skipping row - no name:', row);
-                continue;
-            }
-            
-            // For now, let's put all students in Class 7 (we'll update this later)
-            const className = '7';
+            if (!name || !className) continue;
             
             if (!studentsByClass[className]) {
                 studentsByClass[className] = [];
             }
             
             studentsByClass[className].push({
-                id: studentsByClass[className].length + 1,
+                id: sn,
                 name: name,
                 gender: gender,
-                phone: phone
+                phone: phone,
+                class: className
             });
         }
         
-        console.log('Final processed data:', studentsByClass); // Log final data
+        console.log('Processed student data:', studentsByClass);
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
@@ -87,23 +74,24 @@ async function fetchStudentData() {
 
 // Initialize the page with student data
 document.addEventListener('DOMContentLoaded', async () => {
-    // Get DOM elements
-    const classSelect = document.getElementById('classSelect');
-    const studentList = document.getElementById('studentList');
-    
-    // Add class options
-    classSelect.innerHTML = '<option value="">Select Class</option>';
-    const classes = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-    classes.forEach(className => {
-        const option = document.createElement('option');
-        option.value = className;
-        option.textContent = `Class ${className}`;
-        classSelect.appendChild(option);
-    });
-    
     try {
+        // Get DOM elements
+        const classSelect = document.getElementById('classSelect');
+        const studentList = document.getElementById('studentList');
+        
+        // Add class options
+        classSelect.innerHTML = '<option value="">Select Class</option>';
+        const classes = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+        classes.forEach(className => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = `Class ${className}`;
+            classSelect.appendChild(option);
+        });
+        
         // Fetch and store student data
         const studentData = await fetchStudentData();
+        console.log('Fetched student data:', studentData);
         window.studentsByClass = studentData;
         window.studentBusAssignments = {};
         
@@ -133,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 studentCard.innerHTML = `
                     <div class="student-info">
-                        <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
+                        <div class="student-name"><strong>${student.name}</strong> ${student.gender.toLowerCase() === 'female' ? '👧' : '👦'}</div>
                         <div class="student-details">
                             <span>Phone: ${student.phone || 'N/A'}</span>
                         </div>
@@ -306,7 +294,7 @@ function displayStudents(students) {
         
         studentCard.innerHTML = `
             <div class="student-info">
-                <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
+                <div class="student-name"><strong>${student.name}</strong> ${student.gender.toLowerCase() === 'female' ? '👧' : '👦'}</div>
                 <div class="student-details">
                     <span>Phone: ${student.phone || 'N/A'}</span>
                 </div>
