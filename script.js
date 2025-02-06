@@ -19,6 +19,9 @@ const busStops = {
     ]
 };
 
+// Global variable to store the currently selected student
+let selectedStudentId = null;
+
 // Function to fetch student data from Google Sheet
 async function fetchStudentData() {
     // Use the export URL for CSV format
@@ -154,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Select a student and show bus assignment form
 function selectStudent(student) {
+    selectedStudentId = student.id;
     // Remove previous selection
     const previousSelected = document.querySelector('.student-card.selected');
     if (previousSelected) previousSelected.classList.remove('selected');
@@ -258,67 +262,89 @@ function copyPickupToDropoff() {
 }
 
 // Save student bus assignment
-function saveStudentAssignment(studentId) {
-    const pickupBus = document.getElementById('pickupBus');
-    const pickupStop = document.getElementById('pickupStop');
-    const dropoffBus = document.getElementById('dropoffBus');
-    const dropoffStop = document.getElementById('dropoffStop');
-    const sameLocation = document.getElementById('sameLocation');
-    
-    if (pickupBus.value && pickupStop.value && 
-        (sameLocation.checked || (dropoffBus.value && dropoffStop.value))) {
-        
-        window.studentBusAssignments[studentId] = {
-            pickupBus: pickupBus.value,
-            pickupStop: pickupStop.value,
-            dropoffBus: sameLocation.checked ? pickupBus.value : dropoffBus.value,
-            dropoffStop: sameLocation.checked ? pickupStop.value : dropoffStop.value
-        };
-        
-        // Refresh the display
-        const classSelect = document.getElementById('classSelect');
-        const selectedClass = classSelect.value;
-        if (selectedClass) {
-            const students = window.studentsByClass[selectedClass] || [];
-            displayStudents(students);
-        }
-    }
-}
-
-// Display students
-function displayStudents(students) {
-    const studentList = document.getElementById('studentList');
-    studentList.innerHTML = '';
-    
-    if (students.length === 0) {
-        studentList.innerHTML = '<div class="error">No students found in this class</div>';
+async function saveBusAssignment() {
+    if (!selectedStudentId) {
+        alert('Please select a student first');
         return;
     }
-    
-    students.forEach(student => {
-        const studentCard = document.createElement('div');
-        studentCard.className = 'student-card';
-        
-        const assignment = window.studentBusAssignments[student.id];
-        let busInfo = 'No bus assignment';
-        
-        if (assignment) {
-            busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
+
+    // Get form values
+    const pickupBus = document.getElementById('pickupBus').value.trim();
+    const pickupStop = document.getElementById('pickupStop').value.trim();
+    const dropoffBus = document.getElementById('dropoffBus').value.trim();
+    const dropoffStop = document.getElementById('dropoffStop').value.trim();
+
+    // Validate inputs
+    if (!pickupBus || !pickupStop || !dropoffBus || !dropoffStop) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    // Create assignment object
+    const assignment = {
+        studentId: selectedStudentId,
+        pickupBus,
+        pickupStop,
+        dropoffBus,
+        dropoffStop,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        // Save to Google Sheets (you'll need to implement this API endpoint)
+        const response = await fetch('/api/save-bus-assignment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(assignment)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save assignment');
         }
+
+        // Update local storage
+        window.studentBusAssignments[selectedStudentId] = assignment;
+
+        // Update the UI
+        const studentList = document.getElementById('studentList');
+        const selectedClass = document.getElementById('classSelect').value;
+        const students = window.studentsByClass[selectedClass] || [];
         
-        studentCard.innerHTML = `
-            <div class="student-info">
-                <div class="student-name"><strong>${student.name}</strong> ${student.gender.toLowerCase() === 'female' ? '👧' : '👦'}</div>
-                <div class="student-details">
-                    <span>Phone: ${student.phone || 'N/A'}</span>
+        // Refresh the student list to show updated assignment
+        studentList.innerHTML = '';
+        students.forEach(student => {
+            const studentCard = document.createElement('div');
+            studentCard.className = 'student-card';
+            
+            const currentAssignment = window.studentBusAssignments[student.id];
+            let busInfo = 'No bus assignment';
+            
+            if (currentAssignment) {
+                busInfo = `Pick: ${currentAssignment.pickupBus} (${currentAssignment.pickupStop}) | Drop: ${currentAssignment.dropoffBus} (${currentAssignment.dropoffStop})`;
+            }
+            
+            studentCard.innerHTML = `
+                <div class="student-info">
+                    <div class="student-name"><strong>${student.name}</strong> ${student.gender.toLowerCase() === 'female' ? '👧' : '👦'}</div>
+                    <div class="student-details">
+                        <span>Phone: ${student.phone || 'N/A'}</span>
+                    </div>
+                    <div class="bus-info">${busInfo}</div>
                 </div>
-                <div class="bus-info">${busInfo}</div>
-            </div>
-        `;
-        
-        studentCard.addEventListener('click', () => selectStudent(student));
-        studentList.appendChild(studentCard);
-    });
+            `;
+            
+            studentCard.addEventListener('click', () => selectStudent(student));
+            studentList.appendChild(studentCard);
+        });
+
+        // Show success message
+        alert('Bus assignment saved successfully!');
+    } catch (error) {
+        console.error('Error saving bus assignment:', error);
+        alert('Failed to save bus assignment. Please try again.');
+    }
 }
 
 // Add styles
@@ -369,3 +395,6 @@ const newStyles = `
 const styleSheet = document.createElement("style");
 styleSheet.textContent = newStyles;
 document.head.appendChild(styleSheet);
+
+// Add event listener to save button
+document.getElementById('saveAssignment').addEventListener('click', saveBusAssignment);
