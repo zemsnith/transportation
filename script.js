@@ -19,176 +19,74 @@ const busStops = {
     ]
 };
 
-// Function to fetch and process student data from Google Sheet
-async function fetchStudentData() {
-    // Google Sheet CSV export URL
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1m0XoXRhxfLxIQ61dmHtO8R2iyiCUWqli3WpxXW1CI94/export?format=csv&gid=57740857';
+// Initialize the page with student data
+document.addEventListener('DOMContentLoaded', () => {
+    // Get DOM elements
+    const classSelect = document.getElementById('classSelect');
+    const studentList = document.getElementById('studentList');
     
-    try {
-        const response = await fetch(SHEET_URL);
-        if (!response.ok) {
-            throw new Error('Failed to fetch data');
+    // Add class options
+    classSelect.innerHTML = '<option value="">Select Class</option>';
+    const classes = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    classes.forEach(className => {
+        const option = document.createElement('option');
+        option.value = className;
+        option.textContent = `Class ${className}`;
+        classSelect.appendChild(option);
+    });
+    
+    // Sample student data (you can replace this with your actual data)
+    const studentsByClass = {
+        '7': [
+            { id: '1', name: 'Prashna Karki', gender: 'Female', phone: '9825512557' },
+            { id: '2', name: 'Nilu Magar', gender: 'Female', phone: '9811324082' },
+            { id: '3', name: 'Rahul B.K.', gender: 'Male', phone: '9810514125' },
+            { id: '4', name: 'Gaurab Limbu', gender: 'Male', phone: '9824346825' }
+        ]
+    };
+    
+    // Store data globally
+    window.studentsByClass = studentsByClass;
+    window.studentBusAssignments = {};
+    
+    // Display students when class is selected
+    classSelect.addEventListener('change', () => {
+        const selectedClass = classSelect.value;
+        studentList.innerHTML = '';
+        
+        if (!selectedClass) return;
+        
+        const students = studentsByClass[selectedClass] || [];
+        if (students.length === 0) {
+            studentList.innerHTML = '<div class="error">No students found in this class</div>';
+            return;
         }
         
-        const csvText = await response.text();
-        console.log('Raw CSV text:', csvText); // Log raw CSV data
-        
-        const rows = csvText.split('\n').map(row => row.split(','));
-        console.log('All rows:', rows); // Log all rows
-        
-        // Manually add classes for testing
-        const studentsByClass = {
-            'Nursery': [],
-            'LKG': [],
-            'UKG': [],
-            '1': [],
-            '2': [],
-            '3': [],
-            '4': [],
-            '5': [],
-            '6': [],
-            '7': [],
-            '8': [],
-            '9': [],
-            '10': []
-        };
-        
-        // Process each row
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length < 4) continue;
+        students.forEach(student => {
+            const studentCard = document.createElement('div');
+            studentCard.className = 'student-card';
             
-            // Get values from specific columns based on your Excel sheet
-            const rollNo = row[0]?.trim(); // First column
-            const name = row[1]?.trim(); // Second column
-            const phone = row[6]?.trim(); // Seventh column (SMS Mobile Number)
-            const gender = ''; // We'll leave this empty for now
+            const assignment = window.studentBusAssignments[student.id];
+            let busInfo = 'No bus assignment';
             
-            // Extract class from roll number (first digit)
-            let className = rollNo?.charAt(0);
-            
-            // Convert numeric classes to strings
-            if (className && !isNaN(className)) {
-                className = className.toString();
+            if (assignment) {
+                busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
             }
             
-            // Skip if we don't have essential data
-            if (!name || !className) continue;
-            
-            // Add student to the appropriate class
-            if (studentsByClass[className]) {
-                studentsByClass[className].push({
-                    id: studentsByClass[className].length + 1,
-                    name: name,
-                    gender: gender,
-                    rollNo: rollNo,
-                    phone: phone,
-                    class: className,
-                    section: ''
-                });
-            }
-        }
-        
-        // Remove empty classes
-        Object.keys(studentsByClass).forEach(className => {
-            if (studentsByClass[className].length === 0) {
-                delete studentsByClass[className];
-            }
-        });
-        
-        console.log('Final processed data:', studentsByClass);
-        return studentsByClass;
-        
-    } catch (error) {
-        console.error('Error fetching student data:', error);
-        // Return empty classes as fallback
-        return {
-            'Nursery': [],
-            'LKG': [],
-            'UKG': [],
-            '1': [],
-            '2': [],
-            '3': [],
-            '4': [],
-            '5': [],
-            '6': [],
-            '7': [],
-            '8': [],
-            '9': [],
-            '10': []
-        };
-    }
-}
-
-// Initialize when the page loads
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Get DOM elements
-        const classSelect = document.getElementById('classSelect');
-        const studentList = document.getElementById('studentList');
-        
-        // Fetch student data
-        const studentData = await fetchStudentData();
-        
-        // Update class dropdown
-        classSelect.innerHTML = '<option value="">Select Class</option>';
-        
-        // Add all possible classes in order
-        const allClasses = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        allClasses.forEach(className => {
-            const option = document.createElement('option');
-            option.value = className;
-            option.textContent = `Class ${className}`;
-            classSelect.appendChild(option);
-        });
-        
-        // Store data globally
-        window.studentsByClass = studentData;
-        window.studentBusAssignments = {};
-        
-        // Display students when class is selected
-        classSelect.addEventListener('change', () => {
-            const selectedClass = classSelect.value;
-            studentList.innerHTML = '';
-            
-            if (!selectedClass) return;
-            
-            const students = studentData[selectedClass] || [];
-            if (students.length === 0) {
-                studentList.innerHTML = '<div class="error">No students found in this class</div>';
-                return;
-            }
-            
-            students.forEach(student => {
-                const studentCard = document.createElement('div');
-                studentCard.className = 'student-card';
-                
-                const assignment = window.studentBusAssignments[student.id];
-                let busInfo = 'No bus assignment';
-                
-                if (assignment) {
-                    busInfo = `Pick: ${assignment.pickupBus} (${assignment.pickupStop}) | Drop: ${assignment.dropoffBus} (${assignment.dropoffStop})`;
-                }
-                
-                studentCard.innerHTML = `
-                    <div class="student-info">
-                        <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
-                        <div class="student-details">
-                            <span>Roll No: ${student.rollNo || 'N/A'}</span>
-                            <span>• Phone: ${student.phone || 'N/A'}</span>
-                        </div>
-                        <div class="bus-info">${busInfo}</div>
+            studentCard.innerHTML = `
+                <div class="student-info">
+                    <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
+                    <div class="student-details">
+                        <span>Phone: ${student.phone || 'N/A'}</span>
                     </div>
-                `;
-                
-                studentCard.addEventListener('click', () => selectStudent(student));
-                studentList.appendChild(studentCard);
-            });
+                    <div class="bus-info">${busInfo}</div>
+                </div>
+            `;
+            
+            studentCard.addEventListener('click', () => selectStudent(student));
+            studentList.appendChild(studentCard);
         });
-        
-    } catch (error) {
-        console.error('Error initializing app:', error);
-    }
+    });
 });
 
 // Select a student and show bus assignment form
@@ -243,15 +141,24 @@ function selectStudent(student) {
         pickupStop.innerHTML = '<option value="">Select Location</option>';
         dropoffStop.innerHTML = '<option value="">Select Location</option>';
     }
-    
-    // Add event listeners for saving assignments
-    const pickupStop = document.getElementById('pickupStop');
-    pickupStop.onchange = () => saveStudentAssignment(student.id);
-    const dropoffStop = document.getElementById('dropoffStop');
-    dropoffStop.onchange = () => saveStudentAssignment(student.id);
 }
 
-// Event Listeners
+// Update stops based on selected bus
+function updateStops(busId, stopSelect, selectedValue = '') {
+    stopSelect.innerHTML = '<option value="">Select Location</option>';
+    
+    if (!busId) return;
+    
+    busStops[busId].forEach(stop => {
+        const option = document.createElement('option');
+        option.value = stop;
+        option.textContent = stop;
+        option.selected = stop === selectedValue;
+        stopSelect.appendChild(option);
+    });
+}
+
+// Handle bus selection changes
 const pickupBus = document.getElementById('pickupBus');
 pickupBus.addEventListener('change', () => {
     const pickupStop = document.getElementById('pickupStop');
@@ -265,13 +172,6 @@ const dropoffBus = document.getElementById('dropoffBus');
 dropoffBus.addEventListener('change', () => {
     const dropoffStop = document.getElementById('dropoffStop');
     updateStops(dropoffBus.value, dropoffStop);
-});
-
-const pickupStop = document.getElementById('pickupStop');
-pickupStop.addEventListener('change', () => {
-    if (document.getElementById('sameLocation').checked) {
-        copyPickupToDropoff();
-    }
 });
 
 // Handle same location checkbox
@@ -291,26 +191,17 @@ sameLocation.addEventListener('change', function() {
 function copyPickupToDropoff() {
     dropoffBus.value = pickupBus.value;
     const dropoffStop = document.getElementById('dropoffStop');
-    updateStops(dropoffBus.value, dropoffStop, pickupStop.value);
-}
-
-// Update stops based on selected bus
-function updateStops(busId, stopSelect, selectedValue = '') {
-    stopSelect.innerHTML = '<option value="">Select Location</option>';
-    
-    if (!busId) return;
-    
-    busStops[busId].forEach(stop => {
-        const option = document.createElement('option');
-        option.value = stop;
-        option.textContent = stop;
-        option.selected = stop === selectedValue;
-        stopSelect.appendChild(option);
-    });
+    updateStops(dropoffBus.value, dropoffStop, document.getElementById('pickupStop').value);
 }
 
 // Save student bus assignment
 function saveStudentAssignment(studentId) {
+    const pickupBus = document.getElementById('pickupBus');
+    const pickupStop = document.getElementById('pickupStop');
+    const dropoffBus = document.getElementById('dropoffBus');
+    const dropoffStop = document.getElementById('dropoffStop');
+    const sameLocation = document.getElementById('sameLocation');
+    
     if (pickupBus.value && pickupStop.value && 
         (sameLocation.checked || (dropoffBus.value && dropoffStop.value))) {
         
@@ -320,19 +211,21 @@ function saveStudentAssignment(studentId) {
             dropoffBus: sameLocation.checked ? pickupBus.value : dropoffBus.value,
             dropoffStop: sameLocation.checked ? pickupStop.value : dropoffStop.value
         };
-        displayStudents(); // Refresh the display
+        
+        // Refresh the display
+        const classSelect = document.getElementById('classSelect');
+        const selectedClass = classSelect.value;
+        if (selectedClass) {
+            const students = window.studentsByClass[selectedClass] || [];
+            displayStudents(students);
+        }
     }
 }
 
-// Display students for selected class
-function displayStudents() {
-    const selectedClass = document.getElementById('classSelect').value;
+// Display students
+function displayStudents(students) {
     const studentList = document.getElementById('studentList');
     studentList.innerHTML = '';
-    
-    if (!selectedClass) return;
-    
-    const students = window.studentsByClass[selectedClass] || [];
     
     if (students.length === 0) {
         studentList.innerHTML = '<div class="error">No students found in this class</div>';
@@ -354,8 +247,7 @@ function displayStudents() {
             <div class="student-info">
                 <div class="student-name"><strong>${student.name}</strong> ${student.gender === 'Female' ? '👧' : '👦'}</div>
                 <div class="student-details">
-                    <span>Roll No: ${student.rollNo || 'N/A'}</span>
-                    <span>• Phone: ${student.phone || 'N/A'}</span>
+                    <span>Phone: ${student.phone || 'N/A'}</span>
                 </div>
                 <div class="bus-info">${busInfo}</div>
             </div>
