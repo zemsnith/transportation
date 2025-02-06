@@ -12,18 +12,11 @@ async function fetchStudentData() {
         const csvText = await response.text();
         const rows = csvText.split('\n').map(row => row.split(','));
         
-        // Log the header row to see column order
-        console.log('Headers:', rows[0]);
-        
         // Skip header row and process data
         const studentsByClass = {};
         
         for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            console.log('Row data:', row);
-            
-            // Assuming columns are: Name, Gender, Phone, Class, Roll No
-            const [name, gender, phone, className, rollNo] = row;
+            const [name, gender, phone, className] = rows[i];
             if (!name || !className) continue;
             
             if (!studentsByClass[className]) {
@@ -34,38 +27,37 @@ async function fetchStudentData() {
                 id: studentsByClass[className].length + 1,
                 name: name.trim(),
                 gender: gender.trim(),
-                rollNo: rollNo.trim(),
+                rollNo: '',
                 phone: phone.trim(),
                 class: className.trim(),
                 section: ''
             });
         }
         
-        console.log('Processed data:', studentsByClass);
         return studentsByClass;
     } catch (error) {
         console.error('Error fetching student data:', error);
         // Fallback to Class 7 data if fetch fails
         return {
             '7': [
-                { id: '1', name: 'Prashna Karki', gender: 'Female', rollNo: '1', phone: '9825512557', class: '7', section: '' },
-                { id: '2', name: 'Nilu Magar', gender: 'Female', rollNo: '2', phone: '9811324082', class: '7', section: '' },
-                { id: '3', name: 'Rahul B.K.', gender: 'Female', rollNo: '3', phone: '9810514125', class: '7', section: '' },
-                { id: '4', name: 'Gaurab Limbu', gender: 'Female', rollNo: '4', phone: '9824346825', class: '7', section: '' },
-                { id: '5', name: 'Mousam Rai', gender: 'Female', rollNo: '5', phone: '9804066906', class: '7', section: '' },
-                { id: '6', name: 'Joresh Rai', gender: 'Male', rollNo: '6', phone: '9804314980', class: '7', section: '' },
-                { id: '7', name: 'Sayan Rai', gender: 'Male', rollNo: '7', phone: '9807058819', class: '7', section: '' },
-                { id: '8', name: 'Saina Rai', gender: 'Male', rollNo: '8', phone: '9811063971', class: '7', section: '' },
-                { id: '9', name: 'Alina Limbu', gender: 'Male', rollNo: '9', phone: '9818236272', class: '7', section: '' },
-                { id: '10', name: 'Soina Tamang', gender: 'Female', rollNo: '10', phone: '9824351542', class: '7', section: '' },
-                { id: '11', name: 'Phiroj Rai', gender: 'Female', rollNo: '11', phone: '9819308470', class: '7', section: '' },
-                { id: '12', name: 'Bishnu Adhikari', gender: 'Female', rollNo: '12', phone: '9804088826', class: '7', section: '' },
-                { id: '13', name: 'Rohit Rai', gender: 'Male', rollNo: '13', phone: '9811344864', class: '7', section: '' },
-                { id: '14', name: 'Sishir Magar', gender: 'Male', rollNo: '14', phone: '9817344389', class: '7', section: '' },
-                { id: '15', name: 'Ansh Lhayo Magar', gender: 'Female', rollNo: '15', phone: '9817343204', class: '7', section: '' },
-                { id: '16', name: 'Jashna Limbu', gender: 'Female', rollNo: '16', phone: '9819365953', class: '7', section: '' },
-                { id: '17', name: 'Ninamma Rai', gender: 'Female', rollNo: '17', phone: '9819004269', class: '7', section: '' },
-                { id: '18', name: 'Lidiya Rai', gender: 'Female', rollNo: '18', phone: '9769806982', class: '7', section: '' }
+                { id: '1', name: 'Prashna Karki', gender: 'Female', rollNo: '', phone: '9825512557', class: '7', section: '' },
+                { id: '2', name: 'Nilu Magar', gender: 'Female', rollNo: '', phone: '9811324082', class: '7', section: '' },
+                { id: '3', name: 'Rahul B.K.', gender: 'Female', rollNo: '', phone: '9810514125', class: '7', section: '' },
+                { id: '4', name: 'Gaurab Limbu', gender: 'Female', rollNo: '', phone: '9824346825', class: '7', section: '' },
+                { id: '5', name: 'Mousam Rai', gender: 'Female', rollNo: '', phone: '9804066906', class: '7', section: '' },
+                { id: '6', name: 'Joresh Rai', gender: 'Male', rollNo: '', phone: '9804314980', class: '7', section: '' },
+                { id: '7', name: 'Sayan Rai', gender: 'Male', rollNo: '', phone: '9807058819', class: '7', section: '' },
+                { id: '8', name: 'Saina Rai', gender: 'Male', rollNo: '', phone: '9811063971', class: '7', section: '' },
+                { id: '9', name: 'Alina Limbu', gender: 'Male', rollNo: '', phone: '9818236272', class: '7', section: '' },
+                { id: '10', name: 'Soina Tamang', gender: 'Female', rollNo: '', phone: '9824351542', class: '7', section: '' },
+                { id: '11', name: 'Phiroj Rai', gender: 'Female', rollNo: '', phone: '9819308470', class: '7', section: '' },
+                { id: '12', name: 'Bishnu Adhikari', gender: 'Female', rollNo: '', phone: '9804088826', class: '7', section: '' },
+                { id: '13', name: 'Rohit Rai', gender: 'Male', rollNo: '', phone: '9811344864', class: '7', section: '' },
+                { id: '14', name: 'Sishir Magar', gender: 'Male', rollNo: '', phone: '9817344389', class: '7', section: '' },
+                { id: '15', name: 'Ansh Lhayo Magar', gender: 'Female', rollNo: '', phone: '9817343204', class: '7', section: '' },
+                { id: '16', name: 'Jashna Limbu', gender: 'Female', rollNo: '', phone: '9819365953', class: '7', section: '' },
+                { id: '17', name: 'Ninamma Rai', gender: 'Female', rollNo: '', phone: '9819004269', class: '7', section: '' },
+                { id: '18', name: 'Lidiya Rai', gender: 'Female', rollNo: '', phone: '9769806982', class: '7', section: '' }
             ]
         };
     }
