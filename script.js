@@ -39,12 +39,27 @@ async function fetchStudentData() {
         // Skip header row and process data
         const studentsByClass = {};
         
+        // Find the index of important columns
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const rollNumberIndex = headers.findIndex(h => h.includes('roll'));
+        const nameIndex = headers.findIndex(h => h.includes('name'));
+        const genderIndex = headers.findIndex(h => h.includes('gender'));
+        const phoneIndex = headers.findIndex(h => h.includes('mobile'));
+        
+        console.log('Column indices:', { rollNumberIndex, nameIndex, genderIndex, phoneIndex });
+        
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < 5) continue; // Make sure we have enough columns
+            if (!row || row.length < Math.max(rollNumberIndex, nameIndex, genderIndex, phoneIndex)) continue;
             
-            // Assuming columns are: Roll No, Name, Gender, Phone, Class
-            const [rollNo, name, gender, phone, className] = row;
+            const rollNo = row[rollNumberIndex]?.trim();
+            const name = row[nameIndex]?.trim() || '';
+            const gender = row[genderIndex]?.trim() || '';
+            const phone = row[phoneIndex]?.trim() || '';
+            
+            // Extract class from roll number (assuming it's the first digit)
+            const className = rollNo?.charAt(0) || '';
+            
             if (!name || !className) continue;
             
             if (!studentsByClass[className]) {
@@ -53,11 +68,11 @@ async function fetchStudentData() {
             
             studentsByClass[className].push({
                 id: studentsByClass[className].length + 1,
-                name: name.trim(),
-                gender: gender.trim(),
-                rollNo: rollNo.trim(),
-                phone: phone.trim(),
-                class: className.trim(),
+                name: name,
+                gender: gender,
+                rollNo: rollNo,
+                phone: phone,
+                class: className,
                 section: ''
             });
         }
