@@ -250,7 +250,7 @@ async function saveBusAssignment() {
 
     try {
         // Use the provided Google Apps Script Web App URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVPIGpRbNmeOwh8da-izsKsOOzAYieEfTRNYhSfM4vlXvta1ilVs-PoXR53VmbgpI/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzkHZhU2xJ47skQoZUR0b0GWTbVDYtiofvdTFzILPYBEclcyNZL705q8_i83hCE40/exec';
         
         // Show loading message
         const saveStatus = document.getElementById('saveStatus');
