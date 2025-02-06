@@ -249,8 +249,14 @@ async function saveBusAssignment() {
     };
 
     try {
-        // Create a Google Apps Script Web App URL
-        const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL'; // You'll need to replace this with your actual script URL
+        // Use the provided Google Apps Script Web App URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9OUjpYf0b3s1T3HY6pu-6qKA2vL-c6AeK8BVh61slDD8wqfa6q8pqfU2rcR06Dygd/exec';
+        
+        // Show loading message
+        const saveStatus = document.getElementById('saveStatus');
+        saveStatus.className = 'save-status';
+        saveStatus.textContent = 'Saving...';
+        saveStatus.style.display = 'block';
         
         // Save to Google Sheet via Google Apps Script
         const response = await fetch(SCRIPT_URL, {
@@ -298,10 +304,18 @@ async function saveBusAssignment() {
         });
 
         // Show success message
-        alert('Bus assignment saved successfully!');
+        saveStatus.className = 'save-status success';
+        saveStatus.textContent = 'Bus assignment saved successfully!';
+        setTimeout(() => {
+            saveStatus.style.display = 'none';
+        }, 3000);
+
     } catch (error) {
         console.error('Error saving bus assignment:', error);
-        alert('Failed to save bus assignment. Please try again.');
+        // Show error message
+        const saveStatus = document.getElementById('saveStatus');
+        saveStatus.className = 'save-status error';
+        saveStatus.textContent = 'Failed to save bus assignment. Please try again.';
     }
 }
 
