@@ -31,87 +31,91 @@ async function fetchStudentData() {
         }
         
         const csvText = await response.text();
+        console.log('Raw CSV text:', csvText); // Log raw CSV data
+        
         const rows = csvText.split('\n').map(row => row.split(','));
+        console.log('All rows:', rows); // Log all rows
         
-        // Log headers to see column structure
-        console.log('Headers:', rows[0]);
+        // Manually add classes for testing
+        const studentsByClass = {
+            'Nursery': [],
+            'LKG': [],
+            'UKG': [],
+            '1': [],
+            '2': [],
+            '3': [],
+            '4': [],
+            '5': [],
+            '6': [],
+            '7': [],
+            '8': [],
+            '9': [],
+            '10': []
+        };
         
-        // Skip header row and process data
-        const studentsByClass = {};
-        
-        // Find the index of important columns
-        const headers = rows[0].map(h => h.trim().toLowerCase());
-        const rollNumberIndex = headers.findIndex(h => h.includes('roll'));
-        const nameIndex = headers.findIndex(h => h.includes('name') || h === 'team');
-        const genderIndex = headers.findIndex(h => h.includes('gender') || h === 'ethnicity');
-        const phoneIndex = headers.findIndex(h => h.includes('mobile') || h.includes('sms'));
-        const classIndex = headers.findIndex(h => h.includes('class'));
-        
-        console.log('Column indices:', { rollNumberIndex, nameIndex, genderIndex, phoneIndex, classIndex });
-        
-        // Define the order of classes (Nursery should come before numbered classes)
-        const classOrder = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        
+        // Process each row
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < Math.max(rollNumberIndex, nameIndex, genderIndex, phoneIndex, classIndex)) continue;
+            if (!row || row.length < 4) continue;
             
-            const rollNo = row[rollNumberIndex]?.trim();
-            const name = row[nameIndex]?.trim() || '';
-            const gender = row[genderIndex]?.trim() || '';
-            const phone = row[phoneIndex]?.trim() || '';
-            const className = row[classIndex]?.trim() || rollNo?.charAt(0) || ''; // Fallback to first digit of roll number
+            // Get values from specific columns based on your Excel sheet
+            const rollNo = row[0]?.trim(); // First column
+            const name = row[1]?.trim(); // Second column
+            const phone = row[6]?.trim(); // Seventh column (SMS Mobile Number)
+            const gender = ''; // We'll leave this empty for now
             
-            if (!name || !className) continue;
+            // Extract class from roll number (first digit)
+            let className = rollNo?.charAt(0);
             
-            if (!studentsByClass[className]) {
-                studentsByClass[className] = [];
+            // Convert numeric classes to strings
+            if (className && !isNaN(className)) {
+                className = className.toString();
             }
             
-            studentsByClass[className].push({
-                id: studentsByClass[className].length + 1,
-                name: name,
-                gender: gender,
-                rollNo: rollNo,
-                phone: phone,
-                class: className,
-                section: ''
-            });
+            // Skip if we don't have essential data
+            if (!name || !className) continue;
+            
+            // Add student to the appropriate class
+            if (studentsByClass[className]) {
+                studentsByClass[className].push({
+                    id: studentsByClass[className].length + 1,
+                    name: name,
+                    gender: gender,
+                    rollNo: rollNo,
+                    phone: phone,
+                    class: className,
+                    section: ''
+                });
+            }
         }
         
-        // Sort classes according to our defined order
-        const sortedStudentsByClass = {};
-        classOrder.forEach(className => {
-            if (studentsByClass[className]) {
-                sortedStudentsByClass[className] = studentsByClass[className];
+        // Remove empty classes
+        Object.keys(studentsByClass).forEach(className => {
+            if (studentsByClass[className].length === 0) {
+                delete studentsByClass[className];
             }
         });
         
-        console.log('Processed data:', sortedStudentsByClass);
-        return sortedStudentsByClass;
+        console.log('Final processed data:', studentsByClass);
+        return studentsByClass;
+        
     } catch (error) {
         console.error('Error fetching student data:', error);
+        // Return empty classes as fallback
         return {
-            '7': [
-                { id: '1', name: 'Prashna Karki', gender: 'Female', rollNo: '1', phone: '9825512557', class: '7', section: '' },
-                { id: '2', name: 'Nilu Magar', gender: 'Female', rollNo: '2', phone: '9811324082', class: '7', section: '' },
-                { id: '3', name: 'Rahul B.K.', gender: 'Female', rollNo: '3', phone: '9810514125', class: '7', section: '' },
-                { id: '4', name: 'Gaurab Limbu', gender: 'Female', rollNo: '4', phone: '9824346825', class: '7', section: '' },
-                { id: '5', name: 'Mousam Rai', gender: 'Female', rollNo: '5', phone: '9804066906', class: '7', section: '' },
-                { id: '6', name: 'Joresh Rai', gender: 'Male', rollNo: '6', phone: '9804314980', class: '7', section: '' },
-                { id: '7', name: 'Sayan Rai', gender: 'Male', rollNo: '7', phone: '9807058819', class: '7', section: '' },
-                { id: '8', name: 'Saina Rai', gender: 'Male', rollNo: '8', phone: '9811063971', class: '7', section: '' },
-                { id: '9', name: 'Alina Limbu', gender: 'Male', rollNo: '9', phone: '9818236272', class: '7', section: '' },
-                { id: '10', name: 'Soina Tamang', gender: 'Female', rollNo: '10', phone: '9824351542', class: '7', section: '' },
-                { id: '11', name: 'Phiroj Rai', gender: 'Female', rollNo: '11', phone: '9819308470', class: '7', section: '' },
-                { id: '12', name: 'Bishnu Adhikari', gender: 'Female', rollNo: '12', phone: '9804088826', class: '7', section: '' },
-                { id: '13', name: 'Rohit Rai', gender: 'Male', rollNo: '13', phone: '9811344864', class: '7', section: '' },
-                { id: '14', name: 'Sishir Magar', gender: 'Male', rollNo: '14', phone: '9817344389', class: '7', section: '' },
-                { id: '15', name: 'Ansh Lhayo Magar', gender: 'Female', rollNo: '15', phone: '9817343204', class: '7', section: '' },
-                { id: '16', name: 'Jashna Limbu', gender: 'Female', rollNo: '16', phone: '9819365953', class: '7', section: '' },
-                { id: '17', name: 'Ninamma Rai', gender: 'Female', rollNo: '17', phone: '9819004269', class: '7', section: '' },
-                { id: '18', name: 'Lidiya Rai', gender: 'Female', rollNo: '18', phone: '9769806982', class: '7', section: '' }
-            ]
+            'Nursery': [],
+            'LKG': [],
+            'UKG': [],
+            '1': [],
+            '2': [],
+            '3': [],
+            '4': [],
+            '5': [],
+            '6': [],
+            '7': [],
+            '8': [],
+            '9': [],
+            '10': []
         };
     }
 }
@@ -128,11 +132,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Update class dropdown
         classSelect.innerHTML = '<option value="">Select Class</option>';
-        const classes = Object.keys(studentData).sort((a, b) => {
-            const classOrder = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-            return classOrder.indexOf(a) - classOrder.indexOf(b);
-        });
-        classes.forEach(className => {
+        
+        // Add all possible classes in order
+        const allClasses = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+        allClasses.forEach(className => {
             const option = document.createElement('option');
             option.value = className;
             option.textContent = `Class ${className}`;
